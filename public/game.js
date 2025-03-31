@@ -2,6 +2,13 @@
 const canvas = document.getElementById('gameCanvas')
 const ctx = canvas.getContext('2d')
 
+// 初始化安全区域
+const safeArea = {
+    top: 20,
+    bottom: window.innerHeight - 20
+}
+const topOffset = safeArea.top // 顶部偏移
+
 // 设置canvas尺寸
 function resizeCanvas() {
     const width = window.innerWidth
@@ -13,9 +20,9 @@ function resizeCanvas() {
     canvas.width = gameWidth
     canvas.height = gameHeight
 
-    // 重新计算安全区域
-    safeArea.top = Math.max(20, window.innerHeight * 0.05);
-    safeArea.bottom = canvas.height - Math.max(20, window.innerHeight * 0.05);
+    // 更新安全区域
+    safeArea.top = Math.max(20, window.innerHeight * 0.05)
+    safeArea.bottom = canvas.height - Math.max(20, window.innerHeight * 0.05)
 }
 
 // 初始化时调整canvas尺寸
@@ -37,13 +44,6 @@ document.addEventListener('touchmove', function (e) {
 document.addEventListener('touchstart', function (e) {
     e.preventDefault();
 }, { passive: false });
-
-// 获取系统信息
-const safeArea = {
-    top: 20,
-    bottom: canvas.height - 20
-}
-const topOffset = safeArea.top // 顶部偏移
 
 // 图片加载函数
 function loadImage(src) {
