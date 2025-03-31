@@ -116,9 +116,16 @@ function initGame() {
     // 图片加载函数
     function loadImage(src) {
         return new Promise((resolve, reject) => {
+            console.log('开始加载图片:', src);
             const img = new Image()
-            img.onload = () => resolve(img)
-            img.onerror = reject
+            img.onload = () => {
+                console.log('图片加载成功:', src);
+                resolve(img)
+            }
+            img.onerror = (error) => {
+                console.error('图片加载失败:', src, error);
+                reject(error)
+            }
             img.src = src
         })
     }
@@ -137,32 +144,8 @@ function initGame() {
     // 加载所有图片
     async function loadAllImages() {
         try {
-            const loadImageWithRetry = async (src, retries = 3) => {
-                console.log('开始加载图片:', src);
-                for (let i = 0; i < retries; i++) {
-                    try {
-                        const img = new Image();
-                        const promise = new Promise((resolve, reject) => {
-                            img.onload = () => {
-                                console.log('图片加载成功:', src);
-                                resolve(img);
-                            };
-                            img.onerror = (e) => {
-                                console.error(`图片加载失败 (尝试 ${i + 1}/${retries}):`, src, e);
-                                reject(new Error(`Failed to load image: ${src}`));
-                            };
-                        });
-                        img.src = src;
-                        return await promise;
-                    } catch (err) {
-                        console.warn(`加载失败，重试中 (${i + 1}/${retries}):`, src, err);
-                        if (i === retries - 1) throw err;
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                    }
-                }
-            };
-
-            console.log('开始加载所有图片...');
+            console.log('开始加载所有图片，当前路径:', window.location.href);
+            console.log('检查图片路径:', '/images/pond_bg.jpg');
             
             // 加载主要图片
             const mainImages = [
@@ -173,17 +156,26 @@ function initGame() {
                 {img: images.thirdScreen, src: '/images/third_screen.png'}
             ];
 
+            console.log('准备加载的主要图片:', mainImages.map(img => img.src));
+
             // 并行加载主要图片
             await Promise.all(mainImages.map(async ({img, src}) => {
                 try {
+                    console.log('尝试加载图片:', src);
                     img.src = src;
                     await new Promise((resolve, reject) => {
-                        img.onload = resolve;
-                        img.onerror = () => reject(new Error(`Failed to load: ${src}`));
+                        img.onload = () => {
+                            console.log('主要图片加载成功:', src);
+                            resolve();
+                        };
+                        img.onerror = (error) => {
+                            console.error('主要图片加载失败:', src, error);
+                            console.error('完整图片URL:', new URL(src, window.location.href).href);
+                            reject(new Error(`Failed to load: ${src}`));
+                        };
                     });
-                    console.log('主要图片加载成功:', src);
                 } catch (err) {
-                    console.error('主要图片加载失败:', src, err);
+                    console.error('加载图片时发生错误:', src, err);
                     throw err;
                 }
             }));
@@ -195,8 +187,8 @@ function initGame() {
                 try {
                     const fishImagePath = '/images/' + type.imagePath;
                     const fishCloseupPath = '/images/' + type.closeupPath;
-                    images.fishImages[type.imagePath] = await loadImageWithRetry(fishImagePath);
-                    images.fishCloseupImages[type.closeupPath] = await loadImageWithRetry(fishCloseupPath);
+                    images.fishImages[type.imagePath] = await loadImage(fishImagePath);
+                    images.fishCloseupImages[type.closeupPath] = await loadImage(fishCloseupPath);
                     console.log('鱼类图片加载成功:', type.name);
                 } catch (err) {
                     console.error('鱼类图片加载失败:', type.name, err);
