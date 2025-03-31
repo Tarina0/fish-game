@@ -101,24 +101,47 @@ const images = {
 // 加载所有图片
 async function loadAllImages() {
     try {
+        const loadImageWithRetry = async (src, retries = 3) => {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const img = new Image();
+                    const promise = new Promise((resolve, reject) => {
+                        img.onload = () => resolve(img);
+                        img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
+                    });
+                    img.src = './' + src;
+                    return await promise;
+                } catch (err) {
+                    if (i === retries - 1) throw err;
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+        };
+
         // 加载主要图片
-        images.pondBg.src = 'images/pond_bg.jpg'
-        images.closeupBg.src = 'images/fish_closeup_bg.jpg'
-        images.successPopup.src = 'images/success_popup.png'
-        images.secondScreen.src = 'images/second_screen.png'
-        images.thirdScreen.src = 'images/third_screen.png'
+        [
+            {img: images.pondBg, src: 'images/pond_bg.jpg'},
+            {img: images.closeupBg, src: 'images/fish_closeup_bg.jpg'},
+            {img: images.successPopup, src: 'images/success_popup.png'},
+            {img: images.secondScreen, src: 'images/second_screen.png'},
+            {img: images.thirdScreen, src: 'images/third_screen.png'}
+        ].forEach(({img, src}) => {
+            img.src = './' + src;
+        });
 
         // 加载鱼的图片
         for (const type of gameState.fishTypes) {
-            images.fishImages[type.imagePath] = await loadImage('images/' + type.imagePath)
-            images.fishCloseupImages[type.closeupPath] = await loadImage('images/' + type.closeupPath)
+            images.fishImages[type.imagePath] = await loadImageWithRetry('images/' + type.imagePath);
+            images.fishCloseupImages[type.closeupPath] = await loadImageWithRetry('images/' + type.closeupPath);
         }
 
+        console.log('所有图片加载完成');
         // 所有图片加载完成后初始化游戏
-        initPond()
-        gameLoop()
+        initPond();
+        gameLoop();
     } catch (error) {
-        console.error('图片加载失败:', error)
+        console.error('图片加载失败:', error);
+        alert('游戏资源加载失败，请刷新页面重试');
     }
 }
 
