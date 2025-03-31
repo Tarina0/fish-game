@@ -12,12 +12,31 @@ function resizeCanvas() {
     
     canvas.width = gameWidth
     canvas.height = gameHeight
+
+    // 重新计算安全区域
+    safeArea.top = Math.max(20, window.innerHeight * 0.05);
+    safeArea.bottom = canvas.height - Math.max(20, window.innerHeight * 0.05);
 }
 
 // 初始化时调整canvas尺寸
 resizeCanvas()
-// 监听窗口大小变化
-window.addEventListener('resize', resizeCanvas)
+
+// 监听窗口大小变化和屏幕方向变化
+window.addEventListener('resize', () => {
+    setTimeout(resizeCanvas, 300); // 延迟执行以确保获取正确的窗口尺寸
+});
+window.addEventListener('orientationchange', () => {
+    setTimeout(resizeCanvas, 300);
+});
+
+// 阻止默认的触摸行为
+document.addEventListener('touchmove', function (e) {
+    e.preventDefault();
+}, { passive: false });
+
+document.addEventListener('touchstart', function (e) {
+    e.preventDefault();
+}, { passive: false });
 
 // 获取系统信息
 const safeArea = {
@@ -196,13 +215,15 @@ async function loadAllImages() {
     }
 }
 
-// 触摸事件处理
+// 修改触摸事件处理
 canvas.addEventListener('touchstart', (event) => {
-    event.preventDefault()
-    const touch = event.touches[0]
-    const rect = canvas.getBoundingClientRect()
-    const x = touch.clientX - rect.left
-    const y = touch.clientY - rect.top
+    event.preventDefault();
+    const touch = event.touches[0];
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const x = (touch.clientX - rect.left) * scaleX;
+    const y = (touch.clientY - rect.top) * scaleY;
     
     if (gameState.showThirdScreen) {
         return
@@ -240,18 +261,20 @@ canvas.addEventListener('touchstart', (event) => {
     } else {
         gameState.isHolding = true
     }
-})
+}, { passive: false });
 
-canvas.addEventListener('touchend', () => {
-    if (gameState.currentMode === 'closeup') {
-        gameState.isHolding = false
-    }
-})
-
-// 防止页面滚动
+// 修改touchmove事件
 canvas.addEventListener('touchmove', (event) => {
-    event.preventDefault()
-})
+    event.preventDefault();
+}, { passive: false });
+
+// 修改touchend事件
+canvas.addEventListener('touchend', (event) => {
+    event.preventDefault();
+    if (gameState.currentMode === 'closeup') {
+        gameState.isHolding = false;
+    }
+}, { passive: false });
 
 // 鱼类
 class Fish {
