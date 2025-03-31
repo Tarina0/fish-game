@@ -102,46 +102,95 @@ const images = {
 async function loadAllImages() {
     try {
         const loadImageWithRetry = async (src, retries = 3) => {
+            console.log('开始加载图片:', src);
             for (let i = 0; i < retries; i++) {
                 try {
                     const img = new Image();
                     const promise = new Promise((resolve, reject) => {
-                        img.onload = () => resolve(img);
-                        img.onerror = () => reject(new Error(`Failed to load image: ${src}`));
+                        img.onload = () => {
+                            console.log('图片加载成功:', src);
+                            resolve(img);
+                        };
+                        img.onerror = (e) => {
+                            console.error(`图片加载失败 (尝试 ${i + 1}/${retries}):`, src, e);
+                            reject(new Error(`Failed to load image: ${src}`));
+                        };
                     });
-                    img.src = './' + src;
+                    img.src = src;
                     return await promise;
                 } catch (err) {
+                    console.warn(`加载失败，重试中 (${i + 1}/${retries}):`, src, err);
                     if (i === retries - 1) throw err;
                     await new Promise(resolve => setTimeout(resolve, 1000));
                 }
             }
         };
 
+        console.log('开始加载所有图片...');
+        
         // 加载主要图片
-        [
-            {img: images.pondBg, src: 'images/pond_bg.jpg'},
-            {img: images.closeupBg, src: 'images/fish_closeup_bg.jpg'},
-            {img: images.successPopup, src: 'images/success_popup.png'},
-            {img: images.secondScreen, src: 'images/second_screen.png'},
-            {img: images.thirdScreen, src: 'images/third_screen.png'}
-        ].forEach(({img, src}) => {
-            img.src = './' + src;
-        });
+        const mainImages = [
+            {img: images.pondBg, src: '/images/pond_bg.jpg'},
+            {img: images.closeupBg, src: '/images/fish_closeup_bg.jpg'},
+            {img: images.successPopup, src: '/images/success_popup.png'},
+            {img: images.secondScreen, src: '/images/second_screen.png'},
+            {img: images.thirdScreen, src: '/images/third_screen.png'}
+        ];
+
+        // 并行加载主要图片
+        await Promise.all(mainImages.map(async ({img, src}) => {
+            try {
+                img.src = src;
+                await new Promise((resolve, reject) => {
+                    img.onload = resolve;
+                    img.onerror = () => reject(new Error(`Failed to load: ${src}`));
+                });
+                console.log('主要图片加载成功:', src);
+            } catch (err) {
+                console.error('主要图片加载失败:', src, err);
+                throw err;
+            }
+        }));
+
+        console.log('主要图片加载完成，开始加载鱼类图片...');
 
         // 加载鱼的图片
         for (const type of gameState.fishTypes) {
-            images.fishImages[type.imagePath] = await loadImageWithRetry('images/' + type.imagePath);
-            images.fishCloseupImages[type.closeupPath] = await loadImageWithRetry('images/' + type.closeupPath);
+            try {
+                images.fishImages[type.imagePath] = await loadImageWithRetry('/images/' + type.imagePath);
+                images.fishCloseupImages[type.closeupPath] = await loadImageWithRetry('/images/' + type.closeupPath);
+                console.log('鱼类图片加载成功:', type.name);
+            } catch (err) {
+                console.error('鱼类图片加载失败:', type.name, err);
+                throw err;
+            }
         }
 
-        console.log('所有图片加载完成');
+        console.log('所有图片加载完成，初始化游戏...');
         // 所有图片加载完成后初始化游戏
         initPond();
         gameLoop();
     } catch (error) {
-        console.error('图片加载失败:', error);
-        alert('游戏资源加载失败，请刷新页面重试');
+        console.error('图片加载过程中发生错误:', error);
+        // 显示用户友好的错误信息
+        const errorDiv = document.createElement('div');
+        errorDiv.style.position = 'fixed';
+        errorDiv.style.top = '50%';
+        errorDiv.style.left = '50%';
+        errorDiv.style.transform = 'translate(-50%, -50%)';
+        errorDiv.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        errorDiv.style.color = 'white';
+        errorDiv.style.padding = '20px';
+        errorDiv.style.borderRadius = '10px';
+        errorDiv.style.textAlign = 'center';
+        errorDiv.innerHTML = `
+            <h3>游戏加载失败</h3>
+            <p>请检查网络连接并刷新页面重试</p>
+            <button onclick="location.reload()" style="padding: 10px 20px; margin-top: 10px; cursor: pointer;">
+                重新加载
+            </button>
+        `;
+        document.body.appendChild(errorDiv);
     }
 }
 
