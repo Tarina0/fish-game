@@ -62,9 +62,9 @@ let gameState = {
         red: { min: 80, max: 100 }
     },
     fishTypes: [
-        { name: '金鱼', imagePath: 'images/fish1.png', closeupPath: 'images/fish1_closeup.png', speed: 1.5, size: 60 },
-        { name: '鲤鱼', imagePath: 'images/fish2.png', closeupPath: 'images/fish2_closeup.png', speed: 2, size: 80 },
-        { name: '热带鱼', imagePath: 'images/fish3.png', closeupPath: 'images/fish3_closeup.png', speed: 2.5, size: 50 }
+        { name: '金鱼', imagePath: 'fish1.png', closeupPath: 'fish1_closeup.png', speed: 1.5, size: 60 },
+        { name: '鲤鱼', imagePath: 'fish2.png', closeupPath: 'fish2_closeup.png', speed: 2, size: 80 },
+        { name: '热带鱼', imagePath: 'fish3.png', closeupPath: 'fish3_closeup.png', speed: 2.5, size: 50 }
     ],
     isHolding: false,
     affectionRiseSpeed: 10,
@@ -157,8 +157,10 @@ async function loadAllImages() {
         // 加载鱼的图片
         for (const type of gameState.fishTypes) {
             try {
-                images.fishImages[type.imagePath] = await loadImageWithRetry('/images/' + type.imagePath);
-                images.fishCloseupImages[type.closeupPath] = await loadImageWithRetry('/images/' + type.closeupPath);
+                const fishImagePath = '/images/' + type.imagePath;
+                const fishCloseupPath = '/images/' + type.closeupPath;
+                images.fishImages[type.imagePath] = await loadImageWithRetry(fishImagePath);
+                images.fishCloseupImages[type.closeupPath] = await loadImageWithRetry(fishCloseupPath);
                 console.log('鱼类图片加载成功:', type.name);
             } catch (err) {
                 console.error('鱼类图片加载失败:', type.name, err);
